@@ -39,8 +39,11 @@ def main():
             apk.write_bytes(archive.read("system/priv-app/com.chiller3.msd/app-release.apk"))
             sdk = Path(os.environ["ANDROID_HOME"]) / "build-tools/37.0.0"
             verified = subprocess.check_output([str(sdk / "apksigner"), "verify", "--print-certs", str(apk)], text=True)
-            actual_pin = re.search(r"Signer #1 certificate SHA-256 digest: ([0-9a-f]+)", verified).group(1)
-            assert actual_pin == expected_pin, "APK signer differs from daemon pin"
+            # Recent SDKs include signer SDK ranges in the output prefix.
+            # Require every reported certificate digest to match our one key.
+            actual_pins = re.findall(r"certificate SHA-256 digest:\s*([0-9a-fA-F]{64})", verified)
+            assert actual_pins, f"No signing certificate digest in apksigner output:\n{verified}"
+            assert {pin.lower() for pin in actual_pins} == {expected_pin}, "APK signer differs from daemon pin"
             with zipfile.ZipFile(apk) as app:
                 assert any(b"Lcom/chiller3/msd/standalone/AuthenticatedDaemon;" in app.read(name)
                            for name in app.namelist() if re.fullmatch(r"classes[0-9]*\.dex", name)), "Supervisor removed by shrinking"
