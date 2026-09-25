@@ -9,6 +9,13 @@
 
 ### Unreleased
 
+### MSD-KSU Version 2.6
+
+* Support KernelSU SELinux Hide using explicit UID and APK-certificate authentication.
+* Allow FUSE passthrough to use daemon file descriptors for emulated-storage images.
+* Rebrand the fork as MSD-KSU and document Hybrid Mount and KernelSU app profiles.
+* Publish signed release modules with a persistent fork key and update channel.
+
 ### Version 2.5
 
 * Add support for building the app on non-Linux systems ([PR #119])

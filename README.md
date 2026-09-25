@@ -150,11 +150,11 @@ Inspect the APK bundled inside the module ZIP with:
 apksigner verify --print-certs system/priv-app/com.chiller3.msd/app-debug.apk
 ```
 
-For a release build, use `app-release.apk`. Verify a release against the certificate fingerprint published with that fork release. No fork release signing identity has been published yet. CI debug keys can differ between runs, so those artifacts are not a stable update channel.
+For a release build, use `app-release.apk`. Verify a release against the certificate fingerprint published with that fork release. The fork release certificate SHA-256 is `3ef014bc33fa327835b5d664f3adea5f10d221d3121b891d07e7709c6aaabe99`; the [public certificate](release-signing-certificate.pem) is included in this repository. CI debug keys can differ between runs, so those artifacts are not a stable update channel.
 
 Android requires the same signing identity for an in-place APK update. A fork build with a different key cannot directly replace an upstream-signed APK as an app update; preserve any needed settings before changing installations. Use a consistent signing key for your own builds. The module pins its bundled APK's signer for daemon authentication.
 
-Automatic module update metadata is disabled until this fork has its own release channel.
+Release modules use [this fork's update metadata](app/module/updates/release/info.json). Future releases use the same fork signing identity.
 
 ## Building from source
 

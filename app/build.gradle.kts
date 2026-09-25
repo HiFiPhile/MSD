@@ -327,6 +327,7 @@ androidComponents.onVariants { variant ->
 
     val moduleProp = tasks.register("moduleProp${capitalized}") {
         inputs.property("projectUrl", projectUrl)
+        inputs.property("releaseMetadataBranch", releaseMetadataBranch)
         inputs.property("rootProject.name", rootProject.name)
         inputs.property("variant.applicationId", variant.applicationId)
         inputs.property("variant.name", variant.name)
@@ -345,7 +346,9 @@ androidComponents.onVariants { variant ->
             props["author"] = "HiFiPhile; based on MSD by chenxiaolong"
             props["description"] = "USB mass storage for KernelSU with SELinux Hide compatibility"
 
-            // Enable updateJson when the fork has a published release channel.
+            if (variant.name == "release") {
+                props["updateJson"] = "${projectUrl}/raw/${releaseMetadataBranch}/app/module/updates/${variant.name}/info.json"
+            }
 
             outputFile.get().asFile.writeText(
                 props.map { "${it.key}=${it.value}" }.joinToString("\n"))
