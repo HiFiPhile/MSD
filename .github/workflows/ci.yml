@@ -15,6 +15,14 @@ jobs:
           fetch-depth: 0
           submodules: true
 
+      - name: Fetch upstream version baseline if missing
+        shell: bash
+        run: |
+          if ! git show-ref --verify --quiet refs/tags/v2.5; then
+              git fetch --no-tags https://github.com/chenxiaolong/MSD.git refs/tags/v2.5:refs/tags/v2.5
+              test "$(git rev-parse 'v2.5^{commit}')" = bce6a5a45228b6567287f63909295a6291499f3c
+          fi
+
       - name: Validate gradle wrapper checksum
         uses: gradle/actions/wrapper-validation@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
 

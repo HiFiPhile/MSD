@@ -160,6 +160,16 @@ Automatic module update metadata is disabled until this fork has its own release
 
 ### Building app and module
 
+Module versions are derived from Git history. Use a full clone; if the fork has
+no release tags yet, fetch the upstream version baseline into your local clone:
+
+```bash
+git fetch --no-tags https://github.com/chenxiaolong/MSD.git refs/tags/v2.5:refs/tags/v2.5
+```
+
+CI fetches this baseline automatically when it is missing. This only supplies
+version metadata; it does not replace the fork's source code.
+
 Make sure the [Rust toolchain](https://www.rust-lang.org/) is installed. Rust must be installed via rustup because it provides the required Android toolchains:
 
 ```bash
