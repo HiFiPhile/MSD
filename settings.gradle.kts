@@ -17,5 +17,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "MSD"
+rootProject.name = "MSD-KSU"
 include(":app")

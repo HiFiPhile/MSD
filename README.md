@@ -1,10 +1,12 @@
-# MSD
+# MSD-KSU
 
 <img src="app/images/icon.svg" alt="app icon" width="72" />
 
-MSD is an Android app for emulating mass storage devices over USB. It supports emulating both CD-ROM and disk devices.
+MSD-KSU is a KernelSU-compatible fork of [MSD by chenxiaolong](https://github.com/chenxiaolong/MSD), an Android app for emulating CD-ROM and disk devices over USB.
 
-MSD is installed as a Magisk/KernelSU module so that it can run with system app privileges.
+This fork maintains compatibility with KernelSU's SELinux Hide feature and fixes host I/O failures for images on emulated storage. SELinux remains enforcing. The app and module are installed through KernelSU; their package/module ID remains `com.chiller3.msd`.
+
+Fork-specific support and compatibility work belong in [HiFiPhile/MSD](https://github.com/HiFiPhile/MSD/issues). The original project and its authors retain credit for MSD.
 
 <img src="app/images/light.png" alt="light mode screenshot" width="200" /> <img src="app/images/dark.png" alt="dark mode screenshot" width="200" />
 
@@ -24,21 +26,58 @@ MSD is installed as a Magisk/KernelSU module so that it can run with system app 
 * Only local files are supported
   * Android's Storage Access Framework allows cloud providers to present a file as a local file using FUSE (specifically, via `StorageManager.openProxyFileDescriptor`). Unfortunately, even for the few cloud providers that support this, these files cannot be used because Android's implementation of this mechanism does not allow files to be reopened. Setting up a mass storage device requires reopening the file because the kernel has no way to accept an already open file descriptor.
 
-## Usage
+## KernelSU setup
 
-1. Download the latest version from the [releases page](https://github.com/chenxiaolong/MSD/releases). To verify the digital signature, see the [verifying digital signatures](#verifying-digital-signatures) section.
+### 1. Install Hybrid Mount
 
-2. Install the MSD module in Magisk/KernelSU.
+Download the metamodule ZIP from [Hybrid Mount releases](https://github.com/Hybrid-Mount/meta-hybrid_mount/releases) and install it through KernelSU Manager's module installer. Follow the metamodule's installation prompts and reboot when required. Use Hybrid Mount as the active mounting metamodule.
 
-3. Reboot and open MSD.
+### 2. Install MSD-KSU
 
-4. Add one or more CD-ROM/disk images.
+Download an MSD-KSU module ZIP from this fork's [releases](https://github.com/HiFiPhile/MSD/releases), when available, or a successful [CI build](https://github.com/HiFiPhile/MSD/actions/workflows/ci.yml). For CI builds, download the `MSD-KSU-debug-module` artifact, extract its outer archive, and install the contained `MSD-KSU-*-debug.zip` through KernelSU Manager.
 
-5. Apply the settings.
+CI builds use a debug signing key and are intended for testing. See [signing and updates](#signing-and-updates) before replacing an existing installation.
 
-6. That's it!
+### 3. Set MSD to OverlayFS mode
 
-MSD does not need to run in the background. Once configured, the mass storage devices remain available until they're explicitly disabled or the device is rebooted.
+In Hybrid Mount's module configuration, set `com.chiller3.msd` to **OverlayFS**. The equivalent file configuration is in `/data/adb/hybrid-mount/config.toml`:
+
+```toml
+[rules."com.chiller3.msd"]
+default_mode = "overlay"
+```
+
+The quotes are required because the module ID contains dots. Merge this table into the existing configuration, or edit the table if it already exists. Other modules can retain their current mount modes. Existing path-specific rules for MSD take precedence; update any that would route its files away from OverlayFS.
+
+A ready-to-copy module override is provided in [`examples/hybrid-mount.toml`](examples/hybrid-mount.toml). The module setting is `default_mode = "overlay"`; Hybrid Mount's separate `overlay_mode` setting selects its backing storage (`ext4` or `tmpfs`). Configuration changes take effect after reboot. See the [Hybrid Mount configuration reference](https://github.com/Hybrid-Mount/meta-hybrid_mount#configuration).
+
+### 4. Keep MSD visible to the apps that need it
+
+Choose either KernelSU configuration:
+
+- **Global:** turn off **Umount modules by default** in KernelSU Manager. Check that existing per-app profiles do not explicitly enable **Umount modules** for MSD, your launcher, or Settings.
+- **Per app:** leave the global setting enabled, then use custom app profiles with **Umount modules** disabled for MSD-KSU (`com.chiller3.msd`), your active launcher, and Android Settings (`com.android.settings`, or your ROM's Settings package). Enable the manager's system-app filter to find Settings if needed.
+
+The per-app option keeps the existing policy for other apps. Profile changes do not require granting these apps root access. The launcher and Settings need visibility of MSD's module-mounted APK to load its app entry and resources. See [KernelSU's non-root app profiles](https://kernelsu.org/guide/app-profile.html#non-root-profile).
+
+**SELinux Hide can stay enabled.** It is separate from the **Umount modules** setting. Keep SELinux enforcing.
+
+### 5. Reboot and export an image
+
+Reboot after configuring Hybrid Mount and the app profiles. Open MSD-KSU, add a local CD-ROM or disk image, then apply the settings. If the launcher entry is missing or has a blank icon, recheck the launcher profile and restart the launcher after the reboot.
+
+MSD-KSU does not need to run in the background. Configured USB mass-storage devices remain available until disabled or the phone reboots.
+
+## Tested configuration
+
+- Device model: OnePlus CPH2747
+- Android version: 16
+- KernelSU Next userspace version: 3.4.0
+- Base MSD version: 2.5
+- SELinux: enforcing
+- SELinux Hide: enabled
+
+The authentication changes were verified after reboot, and adding the FUSE descriptor permission restored host access to an image on emulated storage. The Hybrid Mount setup above is configuration guidance; the current Hybrid Mount release has not been newly installed or validated as part of this fork rebrand. Other ROMs and root-manager versions may require additional testing.
 
 ## Permissions
 
@@ -101,27 +140,21 @@ To clear all mass storage devices:
 msd-tool client set-mass-storage
 ```
 
-## Verifying digital signatures
+## Signing and updates
 
-Both the zip file and the APK contained within are digitally signed.
+MSD-KSU builds use the key selected by the fork's build configuration. Upstream MSD's published signing certificate is not a verification key for new fork builds.
 
-### Verifying zip file signature
+Inspect the APK bundled inside the module ZIP with:
 
-To verify the digital signatures of the downloads, follow [the steps here](https://github.com/chenxiaolong/chenxiaolong/blob/master/VERIFY_SSH_SIGNATURES.md).
-
-### Verifying apk signature
-
-First, extract the apk from the zip and then run:
-
-```
-apksigner verify --print-certs system/priv-app/com.chiller3.msd/app-release.apk
+```bash
+apksigner verify --print-certs system/priv-app/com.chiller3.msd/app-debug.apk
 ```
 
-Then, check that the SHA-256 digest of the APK signing certificate is:
+For a release build, use `app-release.apk`. Verify a release against the certificate fingerprint published with that fork release. No fork release signing identity has been published yet. CI debug keys can differ between runs, so those artifacts are not a stable update channel.
 
-```
-de6ea74388dcff7a6120c0f192e77a92c486d40bb166c392fdf4101abc125954
-```
+Android requires the same signing identity for an in-place APK update. A fork build with a different key cannot directly replace an upstream-signed APK as an app update; preserve any needed settings before changing installations. Use a consistent signing key for your own builds. The module pins its bundled APK's signer for daemon authentication.
+
+Automatic module update metadata is disabled until this fork has its own release channel.
 
 ## Building from source
 
@@ -137,7 +170,7 @@ rustup target add x86_64-linux-android
 
 [cargo-android](https://github.com/chenxiaolong/cargo-android) must also be installed.
 
-Then, MSD can be built like most other Android apps using Android Studio or the gradle command line.
+Then, MSD-KSU can be built like most other Android apps using Android Studio or the gradle command line.
 
 To build the APK:
 
@@ -145,7 +178,7 @@ To build the APK:
 ./gradlew assembleDebug
 ```
 
-To build the Magisk/KernelSU module zip (which automatically runs the `assembleDebug` task if needed):
+To build the KernelSU module ZIP (which automatically runs the `assembleDebug` task if needed):
 
 ```bash
 ./gradlew zipDebug
@@ -173,10 +206,10 @@ and then build the release zip:
 
 ## Contributing
 
-Bug fix and translation pull requests are welcome and much appreciated!
+Report KernelSU compatibility issues and send fork-specific changes to [HiFiPhile/MSD](https://github.com/HiFiPhile/MSD). Include the phone model, Android and KernelSU versions, mount backend, and relevant MSD logs.
 
-If you are interested in implementing a new feature and would like to see it included in MSD, please open an issue to discuss it first. I intend for MSD to be as simple and low-maintenance as possible, so I am not too inclined to add new features, but I could be convinced otherwise.
+The original project is [chenxiaolong/MSD](https://github.com/chenxiaolong/MSD). Existing upstream code, artwork, translations, and copyright notices are retained.
 
 ## License
 
-MSD is licensed under GPL-3.0-only. Please see [`LICENSE`](./LICENSE) for the full license text.
+MSD-KSU retains MSD's GPL-3.0-only license. Please see [`LICENSE`](./LICENSE) for the full license text.

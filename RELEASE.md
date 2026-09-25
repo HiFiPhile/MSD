@@ -1,7 +1,5 @@
-The changelog can be found at: [`CHANGELOG.md`](./CHANGELOG.md).
+MSD-KSU is the KernelSU-compatible fork of [MSD](https://github.com/chenxiaolong/MSD).
 
----
+See [`CHANGELOG.md`](./CHANGELOG.md) for changes and [`README.md`](./README.md#kernelsu-setup) for the Hybrid Mount and KernelSU setup.
 
-See [`README.md`](./README.md) for information on how to install and use MSD.
-
-The downloads are digitally signed. Please consider [verifying the digital signatures](./README.md#verifying-digital-signatures) because MSD is installed as a privileged system app.
+Release APKs use the fork's configured signing key. Publish its certificate fingerprint with the release and follow the [signing and update instructions](./README.md#signing-and-updates).

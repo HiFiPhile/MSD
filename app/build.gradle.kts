@@ -112,7 +112,7 @@ val gitVersionTriple = describeVersion(git)
 val gitVersionCode = getVersionCode(gitVersionTriple)
 val gitVersionName = getVersionName(git, gitVersionTriple)
 
-val projectUrl = "https://github.com/chenxiaolong/MSD"
+val projectUrl = "https://github.com/HiFiPhile/MSD"
 val releaseMetadataBranch = "master"
 
 val extraDir = layout.buildDirectory.map { it.dir("extra") }
@@ -327,7 +327,6 @@ androidComponents.onVariants { variant ->
 
     val moduleProp = tasks.register("moduleProp${capitalized}") {
         inputs.property("projectUrl", projectUrl)
-        inputs.property("releaseMetadataBranch", releaseMetadataBranch)
         inputs.property("rootProject.name", rootProject.name)
         inputs.property("variant.applicationId", variant.applicationId)
         inputs.property("variant.name", variant.name)
@@ -343,12 +342,10 @@ androidComponents.onVariants { variant ->
             props["name"] = rootProject.name
             props["version"] = "v${variantVersionName.get()}"
             props["versionCode"] = variantVersionCode.get().toString()
-            props["author"] = "chenxiaolong"
-            props["description"] = "Emulate mass storage devices over USB"
+            props["author"] = "HiFiPhile; based on MSD by chenxiaolong"
+            props["description"] = "USB mass storage for KernelSU with SELinux Hide compatibility"
 
-            if (variant.name == "release") {
-                props["updateJson"] = "${projectUrl}/raw/${releaseMetadataBranch}/app/module/updates/${variant.name}/info.json"
-            }
+            // Enable updateJson when the fork has a published release channel.
 
             outputFile.get().asFile.writeText(
                 props.map { "${it.key}=${it.value}" }.joinToString("\n"))
@@ -455,6 +452,9 @@ androidComponents.onVariants { variant ->
 
         from(File(rootDir, "LICENSE"))
         from(File(rootDir, "README.md"))
+        from(File(rootDir, "examples")) {
+            into("examples")
+        }
     }
 
     tasks.register("updateJson${capitalized}") {
@@ -483,6 +483,7 @@ androidComponents.onVariants { variant ->
             root.put("zipUrl", "${projectUrl}/releases/download/${gitVersionTriple.first}/${rootProject.name}-${variantVersionName.get()}-release.zip")
             root.put("changelog", "${projectUrl}/raw/${gitVersionTriple.first}/app/module/updates/${variant.name}/changelog.txt")
 
+            jsonFile.parentFile.mkdirs()
             jsonFile.writer().use {
                 root.write(it, 4, 0)
             }

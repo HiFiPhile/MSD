@@ -1,0 +1,6 @@
+# Merge this module override into /data/adb/hybrid-mount/config.toml.
+# If the table already exists, edit it instead of adding a duplicate.
+# Module IDs containing dots must be quoted. Reboot after changing the config.
+# Check existing path rules for this module: they override default_mode.
+[rules."com.chiller3.msd"]
+default_mode = "overlay"
